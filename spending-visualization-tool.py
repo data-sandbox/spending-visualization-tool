@@ -182,19 +182,20 @@ def plot_summary(data_all, categories1, categories2):
     plt.show()
 
 
-# set desired categories to visualize
-necessary = ['rent',
-             'auto',
-             'transit',
-             'utilities',
-             'groceries']
-
-discretionary = ['travel',
-                 'hobby',
-                 'restaurant',
-                 'home',
-                 'personal']
-
-plot_summary(dfLogNew, necessary, discretionary)
+if __name__ == "__main__":
+    # set desired categories to visualize
+    necessary = ['rent',
+                 'auto',
+                 'transit',
+                 'utilities',
+                 'groceries']
+    
+    discretionary = ['travel',
+                     'hobby',
+                     'restaurant',
+                     'home',
+                     'personal']
+    
+    plot_summary(dfLogNew, necessary, discretionary)
 
 
