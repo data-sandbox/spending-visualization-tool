@@ -182,7 +182,7 @@ def plot_summary(data_all, categories1, categories2):
     plt.show()
 
 
-
+# set desired categories to visualize
 necessary = ['rent',
              'auto',
              'transit',
