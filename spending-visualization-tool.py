@@ -14,119 +14,123 @@ import seaborn as sns
 ### INPUTS, BEGIN
 
 # year, month
-startDate = 2101
-endDate = 2112
-rangeDate = np.arange(startDate, endDate+1, 1)
+date_start = 2101
+date_end = 2112
+date_range = np.arange(date_start, date_end + 1, 1)
 
-for i in range(len(rangeDate)):
-    endDate = rangeDate[i]
+for i in range(len(date_range)):
+    date_end = date_range[i]
 
     ### INPUTS, END
     
     # accounts
-    accts = ['account1',
+    account = ['account1',
              'account2',
              'account3']
     
     # empty dataframe
-    dfTemp2 = pd.DataFrame()
+    spending_raw_df = pd.DataFrame()
     
     # generate dummy dataframe with all categories of interest
-    cat = pd.read_csv('categories.csv')
+    categories = pd.read_csv('categories.csv')
     # add other columns
-    cat['Debit'] = 0
-    cat['Credit'] = 0 
-    cat['Net'] = 0
+    categories['Debit'] = 0
+    categories['Credit'] = 0
+    categories['Net'] = 0
     
-    for i in range(len(accts)):
+    for i in range(len(account)):
     
         # file name of csv monthly statement
-        fileName = str(endDate) + accts[i] + '.csv'
-        print(fileName)
+        file_name = str(date_end) + account[i] + '.csv'
+        print(file_name)
         
         # temporary dataframe to pull from
-        if accts[i] == 'account1' and exists(fileName) == False:
+        if account[i] == 'account1' and exists(file_name) == False:
             print('')
             print('No account1 statement')
-            dfTemp1 = cat
-        elif accts[i] == 'account2' and exists(fileName) == False:
+            spending_raw_df = categories
+        elif account[i] == 'account2' and exists(file_name) == False:
             print('')
             print('No account2 statement')
-            dfTemp1 = cat
-        elif accts[i] == 'account3':
+            spending_raw_df = categories
+        elif account[i] == 'account3':
             # skip first few rows
-            dfTemp1 = pd.read_csv(fileName, skiprows=3)
+            spending_raw_df = pd.read_csv(file_name, skiprows=3)
         else:
             # skip no rows
-            dfTemp1 = pd.read_csv(fileName)
+            spending_raw_df = pd.read_csv(file_name)
     
-        if 'Amount Debit' in dfTemp1.columns:
-            dfTemp1['Debit'] = dfTemp1['Amount Debit']
-        if 'Amount Credit' in dfTemp1.columns:
-            dfTemp1['Credit'] = dfTemp1['Amount Credit']
+        if 'Amount Debit' in spending_raw_df.columns:
+            spending_raw_df['Debit'] = spending_raw_df['Amount Debit']
+        if 'Amount Credit' in spending_raw_df.columns:
+            spending_raw_df['Credit'] = spending_raw_df['Amount Credit']
         
-        if 'Amount' in dfTemp1.columns:
-             dfTemp1['Debit'] = dfTemp1['Amount']
-        if 'Credit' not in dfTemp1.columns:
-             dfTemp1['Credit'] = 0      
+        if 'Amount' in spending_raw_df.columns:
+             spending_raw_df['Debit'] = spending_raw_df['Amount']
+        if 'Credit' not in spending_raw_df.columns:
+             spending_raw_df['Credit'] = 0
     
         # error checks
-        columnCheck = 'Debit' in dfTemp1.columns
-        assert columnCheck > 0, "Debit column not present"
-        columnCheck = 'Credit' in dfTemp1.columns
-        assert columnCheck > 0, "Credit column not present"
+        column_check = ['Debit', 'Credit']
+        for i in column_check:
+            column_check[i] in spending_raw_df.columns
+            assert column_check > 0, "column not present"
+        # column_check = 'Debit' in dfTemp1.columns
+        # assert column_check > 0, "Debit column not present"
+        # column_check = 'Credit' in dfTemp1.columns
+        # assert column_check > 0, "Credit column not present"
     
         # force columns to be consistently positive
-        dfTemp1['Debit'] = dfTemp1['Debit'].abs()
-        dfTemp1['Credit'] = dfTemp1['Credit'].abs()
+        spending_raw_df['Debit'] = spending_raw_df['Debit'].abs()
+        spending_raw_df['Credit'] = spending_raw_df['Credit'].abs()
     
         # replace all nan values with zeros for later math operations
-        dfTemp1 = dfTemp1.fillna(value={'Debit': 0, 'Credit': 0})
+        spending_raw_df = spending_raw_df.fillna(value={'Debit': 0, 'Credit': 0})
     
         # add amount data to temporary dataframe summary
-        dfTemp2 = pd.concat([dfTemp2, dfTemp1], axis=0)
+        spending_raw_df = pd.concat([spending_raw_df, spending_raw_df], axis=0)
         
     # add net column
-    dfTemp2['Net'] = dfTemp2['Debit'] - dfTemp2['Credit']
+    spending_raw_df['Net'] = spending_raw_df['Debit'] - spending_raw_df['Credit']
     # absolute value net column
-    dfTemp2['Net'] = dfTemp2['Net'].abs()
+    spending_raw_df['Net'] = spending_raw_df['Net'].abs()
     
     # add category list to include any categories with zero spending
-    dfTemp2 = pd.concat([dfTemp2, cat])
+    spending_raw_df = pd.concat([spending_raw_df, categories])
     
     # keep only category and amount columns
-    dfTemp2 = dfTemp2[['Category', 'Debit', 'Credit', 'Net']]
+    spending_raw_df = spending_raw_df[['Category', 'Debit', 'Credit', 'Net']]
     
     # create summary dataframe with categories spending grouped
-    dfMonth = dfTemp2.groupby('Category', as_index=False).agg('sum')
+    dfMonth = spending_raw_df.groupby('Category', as_index=False).agg('sum')
     
     # add column identifying the year and month
-    dfMonth.insert(1, 'Date', str(endDate))
+    dfMonth.insert(1, 'Date', str(date_end))
     
     # determine name of running log data file
-    month = endDate % 100
+    month = date_end % 100
     if month < 2:
         # account for last entry being the prior year
-        logDate = endDate - 89
+        log_date = date_end - 89
     else:
-        logDate = endDate - 1
+        log_date = date_end - 1
     
     # read running log data
-    dfLog = pd.read_csv('log' + str(logDate) + '.csv')
+    spending_log_df = pd.read_csv('log' + str(log_date) + '.csv')
     
     # keep only category and amount columns
-    dfLog = dfLog[['Category', 'Date', 'Debit', 'Credit', 'Net']]
+    spending_log_df = spending_log_df[['Category', 'Date', 'Debit', 'Credit', 'Net']]
     
     # add monthly data to running annual data
-    dfLogNew = pd.concat([dfLog, dfMonth])
+    spending_output_df = pd.concat([spending_log_df, dfMonth])
     
     # reset index
-    dfLogNew = dfLogNew.reset_index(drop=True)
+    spending_output_df = spending_output_df.reset_index(drop=True)
     # export new log
-    dfLogNew.to_csv('log' + str(endDate) + '.csv')
+    spending_output_df.to_csv('log' + str(date_end) + '.csv')
 
 # compute running totals
-dfTotals = dfLogNew.groupby('Category', as_index=False).agg('sum')
+dfTotals = spending_output_df.groupby('Category', as_index=False).agg('sum')
 
 # compute expense totals only
 dropCat = ['income', 'freelance', 'investment']
@@ -135,10 +139,27 @@ for i in range(len(dropCat)):
 totalExp = dfTotals['Net'].sum()
 
 # convert date to string so Dec to Jan dates still plot side by side
-dfLogNew['Date'] = dfLogNew['Date'].astype(str)
+spending_output_df['Date'] = spending_output_df['Date'].astype(str)
 
 
 def plot_summary(data_all, categories1, categories2):
+    """
+    Plot subsets of the data.
+
+    Parameters
+    ----------
+    data_all : dataframe
+        Data for all categories.
+    categories1 : list
+        List of desired categories.
+    categories2 : list
+        List of desired categories.
+
+    Returns
+    -------
+    Plots for spending visualization.
+
+    """
     
     # inputs
     label_angle = 60
@@ -196,6 +217,6 @@ if __name__ == "__main__":
                      'home',
                      'personal']
     
-    plot_summary(dfLogNew, necessary, discretionary)
+    plot_summary(spending_output_df, necessary, discretionary)
 
 
