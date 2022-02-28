@@ -25,24 +25,25 @@ import seaborn as sns
 # get all csv files in directory
 path = os.getcwd()
 csv_files = glob.glob(os.path.join(path, "*.csv"))
+
+spending_output_df = pd.DataFrame()
   
 # loop over the list of csv files
 for f in csv_files:
     
     # read the month
     month = f[71:75]
+    print(month)
     
     # read the csv file
     spending_raw_df = pd.read_csv(f)
     
-    print(spending_raw_df)
-    
     # generate dummy dataframe with all categories of interest
-    categories = pd.read_csv('categories.csv')
-    # add other columns
-    categories['Debit'] = 0
-    categories['Credit'] = 0
-    categories['Net'] = 0
+    # categories = pd.read_csv('categories.csv')
+    # # add other columns
+    # categories['Debit'] = 0
+    # categories['Credit'] = 0
+    # categories['Net'] = 0
         
     # temporary dataframe to pull from
     # if account[i] == 'account1' and exists(file_name) == False:
@@ -59,7 +60,22 @@ for f in csv_files:
     # else:
     #     # skip no rows
     #     spending_raw_df = pd.read_csv(file_name)
-
+    
+    ### clean csv if header rows included
+    date_check = ['Date', 'Post Date', 'Posted Date']
+    # reset flag
+    date_flag = 0 
+    for d in date_check:
+        if d in spending_raw_df.columns:
+            date_flag = 1
+            # skip rows
+            #print(d)
+            #print(spending_raw_df)
+    if date_flag == 0:
+        # header rows need to be cleaned    
+        spending_raw_df = pd.read_csv(f, skiprows=3)
+        
+    # data consistency check
     if 'Amount Debit' in spending_raw_df.columns:
         spending_raw_df['Debit'] = spending_raw_df['Amount Debit']
     if 'Amount Credit' in spending_raw_df.columns:
@@ -89,7 +105,7 @@ for f in csv_files:
     spending_raw_df = spending_raw_df.fillna(value={'Debit': 0, 'Credit': 0})
 
     # add amount data to temporary dataframe summary
-    spending_raw_df = pd.concat([spending_raw_df, spending_raw_df], axis=0)
+    #spending_raw_df = pd.concat([spending_raw_df, spending_raw_df], axis=0)
         
     # add net column
     spending_raw_df['Net'] = spending_raw_df['Debit'] - spending_raw_df['Credit']
@@ -97,7 +113,7 @@ for f in csv_files:
     spending_raw_df['Net'] = spending_raw_df['Net'].abs()
     
     # add category list to include any categories with zero spending
-    spending_raw_df = pd.concat([spending_raw_df, categories])
+    #spending_raw_df = pd.concat([spending_raw_df, categories])
     
     # keep only category and amount columns
     spending_raw_df = spending_raw_df[['Category', 'Debit', 'Credit', 'Net']]
@@ -124,9 +140,10 @@ for f in csv_files:
     
     # add monthly data to running annual data
     #spending_output_df = pd.concat([spending_log_df, dfMonth])
+    spending_output_df = pd.concat([spending_output_df, dfMonth])
     
     # reset index
-    #spending_output_df = spending_output_df.reset_index(drop=True)
+    spending_output_df = spending_output_df.reset_index(drop=True)
     # export new log
     #spending_output_df.to_csv('log' + str(date_end) + '.csv')
 
@@ -134,13 +151,13 @@ for f in csv_files:
 #dfTotals = spending_output_df.groupby('Category', as_index=False).agg('sum')
 
 # compute expense totals only
-spending_expenses_df = ['income', 'freelance', 'investment']
-for i in spending_expenses_df:
-    dfTotals = dfTotals[dfTotals['Category'].str.contains(spending_expenses_df[i])==False]
-totalExp = dfTotals['Net'].sum()
+# spending_expenses_df = ['income', 'freelance', 'investment']
+# for i in spending_expenses_df:
+#     dfTotals = dfTotals[dfTotals['Category'].str.contains(spending_expenses_df[i])==False]
+# totalExp = dfTotals['Net'].sum()
 
 # convert date to string so Dec to Jan dates still plot side by side
-#spending_output_df['Date'] = spending_output_df['Date'].astype(str)
+spending_output_df['Date'] = spending_output_df['Date'].astype(str)
 
 
 def plot_summary(data_all, categories1, categories2):
@@ -165,6 +182,15 @@ def plot_summary(data_all, categories1, categories2):
     # inputs
     label_angle = 60
     
+    # data consistency check
+    for j in categories1:
+        if j not in categories1:
+            data_all[j] = 0
+    
+    for j in categories2:
+        if j not in categories2:
+            data_all[j] = 0
+    
     # create dataframes
     data_subset1 = data_all.loc[data_all['Category'].isin(categories1)]
     data_subset2 = data_all.loc[data_all['Category'].isin(categories2)]
@@ -172,6 +198,8 @@ def plot_summary(data_all, categories1, categories2):
     data_tuple1 = tuple[categories1, data_subset1]
     
     # overview plot
+    plt.close('all')
+    
     #colors = sns.color_palette("Set2")
     plt.figure()
     g = sns.lineplot(data=data_all,
@@ -183,8 +211,8 @@ def plot_summary(data_all, categories1, categories2):
     
     # category subset 1
     plt.figure()
-    colors = sns.color_palette("Set2", len(data_tuple1[0]))
-    g = sns.lineplot(data=data_tuple1[1],
+    colors = sns.color_palette("Set2", len(categories1))
+    g = sns.lineplot(data=data_subset1,
                  x='Date', y='Net', 
                  hue='Category',
                  marker='o', 
@@ -205,6 +233,7 @@ def plot_summary(data_all, categories1, categories2):
 
 
 if __name__ == "__main__":
+    
     # set desired categories to visualize
     necessary = ['rent',
                  'auto',
