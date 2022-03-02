@@ -69,13 +69,13 @@ for f in csv_files:
     spending_raw_df = spending_raw_df[['Category', 'Debit', 'Credit', 'Net']]
     
     # create summary dataframe with categories spending grouped
-    dfMonth = spending_raw_df.groupby('Category', as_index=False).agg('sum')
+    spending_grouped_df = spending_raw_df.groupby('Category', as_index=False).agg('sum')
     
     # add column identifying the year and month
-    dfMonth.insert(1, 'Date', month)
+    spending_grouped_df.insert(1, 'Date', month)
     
     # add monthly data to running annual data
-    spending_output_df = pd.concat([spending_output_df, dfMonth])
+    spending_output_df = pd.concat([spending_output_df, spending_grouped_df])
     
     # reset index
     spending_output_df = spending_output_df.reset_index(drop=True)
@@ -113,7 +113,7 @@ def plot_summary(data_all, categories1, categories2):
     # inputs
     label_angle = 60
     
-    # data consistency check
+    # data consistency check. if category does not exist, give 0 value
     for j in categories1:
         if j not in categories1:
             data_all[j] = 0
@@ -166,6 +166,31 @@ def plot_summary(data_all, categories1, categories2):
     plt.xticks(rotation=label_angle)
     plt.show()
 
+#%% plot function
+def spending_threshold(data_df, threshold):
+    
+    data_df_low = data_df[data_df['Net'] < threshold]
+    data_df_high = data_df[data_df['Net'] > threshold] 
+    
+    label_angle = 60
+    
+    plt.figure()
+    g = sns.lineplot(data=data_df_low,
+                 x='Date', y='Net', 
+                 hue='Category',
+                 marker='o')
+    plt.xticks(rotation=label_angle)
+    plt.show()
+    
+    plt.figure()
+    g = sns.lineplot(data=data_df_high,
+                 x='Date', y='Net', 
+                 hue='Category',
+                 marker='o')
+    plt.xticks(rotation=label_angle)
+    plt.show()
+    
+    
 #%% run function
 
 if __name__ == "__main__":
@@ -183,6 +208,6 @@ if __name__ == "__main__":
                      'home',
                      'personal']
     
-    plot_summary(spending_output_df, necessary, discretionary)
-
+    #plot_summary(spending_output_df, necessary, discretionary)
+    spending_threshold(spending_output_df, 800)
 
