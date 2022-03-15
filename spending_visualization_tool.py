@@ -58,8 +58,10 @@ for f in csv_files:
     spending_raw_df['Credit'] = spending_raw_df['Credit'].abs()
 
     # clean nan values with zeros for later math operations
-    spending_raw_df = spending_raw_df.fillna(value={'Debit': 0, 'Credit': 0})
-        
+    #spending_raw_df = spending_raw_df.fillna(value={'Debit': 0, 'Credit': 0})
+    #spending_raw_df = spending_raw_df.dropna(axis=0, how='any')
+    spending_raw_df = spending_raw_df.dropna() 
+    
     # add net column
     spending_raw_df['Net'] = spending_raw_df['Debit'] - spending_raw_df['Credit']
     # absolute value net column
