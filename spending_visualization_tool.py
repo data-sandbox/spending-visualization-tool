@@ -21,6 +21,60 @@ csv_files = glob.glob(os.path.join(path, "*.csv"))
 # generate empty dataframe
 spending_output_df = pd.DataFrame()
 
+#%% functions
+def clean_data(spending_df):
+    """
+    Clean the dataframe before processing
+
+    Parameters
+    ----------
+    df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    # clean csv if header rows included
+    date_check = ['Date', 'Post Date', 'Posted Date']
+    # reset flag
+    date_flag = 0 
+    for d in date_check:
+        if d in spending_df.columns:
+            date_flag = 1
+    if date_flag == 0:
+        # remove header rows 
+        spending_df = pd.read_csv(f, skiprows=3)
+        
+    # data consistency check
+    if 'Amount Debit' in spending_df.columns:
+        spending_df['Debit'] = spending_df['Amount Debit']
+    if 'Amount Credit' in spending_df.columns:
+        spending_df['Credit'] = spending_df['Amount Credit']
+    
+    if 'Amount' in spending_df.columns:
+         spending_df['Debit'] = spending_df['Amount']
+    if 'Credit' not in spending_df.columns:
+         spending_df['Credit'] = 0
+
+    # values all positive
+    spending_df['Debit'] = spending_df['Debit'].abs()
+    spending_df['Credit'] = spending_df['Credit'].abs()
+
+    # column filter
+    spending_df = spending_df[['Category', 'Debit', 'Credit']]
+
+    # clean nan values with zeros for later math operations
+    spending_df = spending_df.fillna(value={'Debit': 0, 'Credit': 0})
+    
+    # add net column
+    spending_df['Net'] = spending_df['Debit'] - spending_df['Credit']
+    # absolute value net column
+    spending_df['Net'] = spending_df['Net'].abs()
+    
+    return spending_df
+
 #%% iterate through list of csv files
 for f in csv_files:
     
@@ -28,47 +82,8 @@ for f in csv_files:
     month = f[71:75]
     print(month)
     
-    # read the csv file
-    spending_raw_df = pd.read_csv(f)
-    
-    # clean csv if header rows included
-    date_check = ['Date', 'Post Date', 'Posted Date']
-    # reset flag
-    date_flag = 0 
-    for d in date_check:
-        if d in spending_raw_df.columns:
-            date_flag = 1
-    if date_flag == 0:
-        # header rows need to be cleaned    
-        spending_raw_df = pd.read_csv(f, skiprows=3)
-        
-    # data consistency check
-    if 'Amount Debit' in spending_raw_df.columns:
-        spending_raw_df['Debit'] = spending_raw_df['Amount Debit']
-    if 'Amount Credit' in spending_raw_df.columns:
-        spending_raw_df['Credit'] = spending_raw_df['Amount Credit']
-    
-    if 'Amount' in spending_raw_df.columns:
-         spending_raw_df['Debit'] = spending_raw_df['Amount']
-    if 'Credit' not in spending_raw_df.columns:
-         spending_raw_df['Credit'] = 0
-
-    # clean columns to be all positive
-    spending_raw_df['Debit'] = spending_raw_df['Debit'].abs()
-    spending_raw_df['Credit'] = spending_raw_df['Credit'].abs()
-
-    # clean nan values with zeros for later math operations
-    #spending_raw_df = spending_raw_df.fillna(value={'Debit': 0, 'Credit': 0})
-    #spending_raw_df = spending_raw_df.dropna(axis=0, how='any')
-    spending_raw_df = spending_raw_df.dropna() 
-    
-    # add net column
-    spending_raw_df['Net'] = spending_raw_df['Debit'] - spending_raw_df['Credit']
-    # absolute value net column
-    spending_raw_df['Net'] = spending_raw_df['Net'].abs()
-    
-    # keep only category and amount columns
-    spending_raw_df = spending_raw_df[['Category', 'Debit', 'Credit', 'Net']]
+    # read the csv file and clean the data
+    spending_raw_df = clean_data(pd.read_csv(f))
     
     # create summary dataframe with categories spending grouped
     spending_grouped_df = spending_raw_df.groupby('Category', as_index=False).agg('sum')
@@ -77,10 +92,9 @@ for f in csv_files:
     spending_grouped_df.insert(1, 'Date', month)
     
     # add monthly data to running annual data
-    spending_output_df = pd.concat([spending_output_df, spending_grouped_df])
-    
-    # reset index
-    spending_output_df = spending_output_df.reset_index(drop=True)
+    spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
+                                   ignore_index=True, sort=False)
+
 
 #%% data cleaning
 # group by category for each month
