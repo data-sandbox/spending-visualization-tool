@@ -24,19 +24,10 @@ spending_output_df = pd.DataFrame()
 #%% functions
 def clean_data(spending_df):
     """
-    Clean the dataframe before processing
-
-    Parameters
-    ----------
-    df : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
+    Clean the dataframe before further processing
+    
     """
-    # clean csv if header rows included
+    # remove header rows if included
     date_check = ['Date', 'Post Date', 'Posted Date']
     # reset flag
     date_flag = 0 
@@ -47,18 +38,17 @@ def clean_data(spending_df):
         # remove header rows 
         spending_df = pd.read_csv(f, skiprows=3)
         
-    # data consistency check
+    # consistency check
     if 'Amount Debit' in spending_df.columns:
         spending_df['Debit'] = spending_df['Amount Debit']
     if 'Amount Credit' in spending_df.columns:
         spending_df['Credit'] = spending_df['Amount Credit']
-    
     if 'Amount' in spending_df.columns:
          spending_df['Debit'] = spending_df['Amount']
     if 'Credit' not in spending_df.columns:
          spending_df['Credit'] = 0
 
-    # values all positive
+    # make all positive
     spending_df['Debit'] = spending_df['Debit'].abs()
     spending_df['Credit'] = spending_df['Credit'].abs()
 
@@ -78,7 +68,7 @@ def clean_data(spending_df):
 #%% iterate through list of csv files
 for f in csv_files:
     
-    # read the month
+    # slice filename to get the month
     month = f[71:75]
     print(month)
     
@@ -95,12 +85,11 @@ for f in csv_files:
     spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
                                    ignore_index=True, sort=False)
 
-
-#%% data cleaning
 # group by category for each month
 spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
 
-#spending_output_df.sort_values('Date')
+# WIP. Get mean to split categories across multiple plots later on
+mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
 
 # convert date to string so Dec to Jan dates still plot side by side
 #spending_output_df['Date'] = spending_output_df['Date'].astype(str)
@@ -110,19 +99,6 @@ spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=F
 def plot_summary(data_all, categories1, categories2):
     """
     Plot subsets of the data.
-
-    Parameters
-    ----------
-    data_all : dataframe
-        Data for all categories.
-    categories1 : list
-        List of desired categories.
-    categories2 : list
-        List of desired categories.
-
-    Returns
-    -------
-    Plots for spending visualization.
 
     """
     
@@ -142,15 +118,8 @@ def plot_summary(data_all, categories1, categories2):
     data_subset1 = data_all.loc[data_all['Category'].isin(categories1)]
     data_subset2 = data_all.loc[data_all['Category'].isin(categories2)]
     
-    # force sort by date?
-    # data_subset1.sort_values('Date')
-    # data_subset2.sort_values('Date')
-    
-    #data_tuple1 = tuple[categories1, data_subset1]
-    
     # overview plot
     plt.close('all')
-    
     #colors = sns.color_palette("Set2")
     plt.figure()
     g = sns.lineplot(data=data_all,
