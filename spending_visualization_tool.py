@@ -57,7 +57,10 @@ def clean_data(spending_df, account, month):
     spending_df = spending_df[['Category', 'Debit', 'Credit']]
 
     # clean nan values with zeros for later math operations
-    spending_df = spending_df.fillna(value={'Debit': 0, 'Credit': 0})
+    spending_df.fillna(value={'Debit': 0, 'Credit': 0}, inplace=True)
+    
+    # remove remaining nan values under category
+    spending_df.dropna(axis=0, inplace=True)
     
     # add net column
     spending_df['Net'] = spending_df['Debit'] - spending_df['Credit']
