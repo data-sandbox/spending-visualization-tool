@@ -20,9 +20,10 @@ csv_files = glob.glob(os.path.join(path, "*.csv"))
 
 # generate empty dataframe
 spending_output_df = pd.DataFrame()
+spending_main_df = pd.DataFrame()
 
 #%% functions
-def clean_data(spending_df):
+def clean_data(spending_df, account, month):
     """
     Clean the dataframe before further processing
     
@@ -63,17 +64,36 @@ def clean_data(spending_df):
     # absolute value net column
     spending_df['Net'] = spending_df['Net'].abs()
     
-    return spending_df
+    # second df containing account name and month
+    spending_all_df = spending_df.copy()
+    spending_all_df['Account'] = account
+    spending_all_df['Month'] = month
+    
+    
+    return spending_df, spending_all_df
+
+#%% NEW WORKFLOW
+"""
+- create main df with all transactions and new column with account name
+- print latest month's df of transactions and require input before adding it?
+- groupby just before plotting
+- separate plotting by making new groupby df, add average column, sort by average
+column, and split index with one half on one plot, other half on second plot
+"""
 
 #%% iterate through list of csv files
 for f in csv_files:
     
     # slice filename to get the month
     month = f[71:75]
+    # get account name
+    account = f[75:]
+    account = account[:-4]
+    # print status
     print(month)
     
     # read the csv file and clean the data
-    spending_raw_df = clean_data(pd.read_csv(f))
+    spending_raw_df, spending_all_df = clean_data(pd.read_csv(f), account, month)
     
     # create summary dataframe with categories spending grouped
     spending_grouped_df = spending_raw_df.groupby('Category', as_index=False).agg('sum')
@@ -84,7 +104,8 @@ for f in csv_files:
     # add monthly data to running annual data
     spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
                                    ignore_index=True, sort=False)
-
+    spending_main_df = pd.concat([spending_main_df, spending_all_df],
+                                 ignore_index=True, sort=False)
 # group by category for each month
 spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
 
