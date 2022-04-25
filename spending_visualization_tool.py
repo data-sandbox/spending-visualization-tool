@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+
 #%%
 # get all csv files in directory
 path = os.getcwd()
@@ -53,27 +57,24 @@ def clean_data(spending_df, account, month):
     spending_df['Debit'] = spending_df['Debit'].abs()
     spending_df['Credit'] = spending_df['Credit'].abs()
 
-    # column filter
-    spending_df = spending_df[['Category', 'Debit', 'Credit']]
+    # add columns
+    spending_df['Account'] = account
+    spending_df['Month'] = month
 
     # clean nan values with zeros for later math operations
-    spending_df.fillna(value={'Debit': 0, 'Credit': 0}, inplace=True)
+    spending_df = spending_df.fillna(value={'Debit': 0, 'Credit': 0})
     
+     # add net column. Negative value indicates credit
+    spending_df['Net'] = spending_df['Debit'] - spending_df['Credit'] 
+    
+    # column filter and ordering
+    spending_df = spending_df[['Month', 'Account', 'Description', 'Category', 
+                               'Debit', 'Credit', 'Net']]
+
     # remove remaining nan values under category
-    spending_df.dropna(axis=0, inplace=True)
+    spending_df = spending_df.dropna(axis=0)
     
-    # add net column
-    spending_df['Net'] = spending_df['Debit'] - spending_df['Credit']
-    # absolute value net column
-    spending_df['Net'] = spending_df['Net'].abs()
-    
-    # second df containing account name and month
-    spending_all_df = spending_df.copy()
-    spending_all_df['Account'] = account
-    spending_all_df['Month'] = month
-    
-    
-    return spending_df, spending_all_df
+    return spending_df
 
 #%% NEW WORKFLOW
 """
@@ -96,27 +97,44 @@ for f in csv_files:
     print(month)
     
     # read the csv file and clean the data
-    spending_raw_df, spending_all_df = clean_data(pd.read_csv(f), account, month)
+    spending_month_df = clean_data(pd.read_csv(f), account, month)
     
     # create summary dataframe with categories spending grouped
-    spending_grouped_df = spending_raw_df.groupby('Category', as_index=False).agg('sum')
+    #spending_grouped_df = spending_df.groupby('Category', as_index=False).agg('sum')
     
     # add column identifying the year and month
-    spending_grouped_df.insert(1, 'Date', month)
+    #spending_grouped_df.insert(1, 'Date', month)
     
     # add monthly data to running annual data
-    spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
-                                   ignore_index=True, sort=False)
-    spending_main_df = pd.concat([spending_main_df, spending_all_df],
+    # spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
+    #                                ignore_index=True, sort=False)
+    spending_main_df = pd.concat([spending_main_df, spending_month_df],
                                  ignore_index=True, sort=False)
 # group by category for each month
-spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
+#spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
 
 # WIP. Get mean to split categories across multiple plots later on
-mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
+#mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
 
 # convert date to string so Dec to Jan dates still plot side by side
 #spending_output_df['Date'] = spending_output_df['Date'].astype(str)
+
+#%% machine learning
+# note: DecisionTreeClassifier is expecting X to be numerical, not categorical!
+    
+# features = ['Description', 'Debit', 'Credit']
+# X = spending_main_df[features].copy()
+# y = spending_main_df['Category'].copy()
+
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, 
+#                                                     random_state=15)
+# # fit on training set
+# category_classifier = DecisionTreeClassifier(max_leaf_nodes=10, random_state=0)
+# category_classifier.fit(X_train, y_train)
+
+# predictions = category_classifier.predict(X_test)
+
+# accuracy = accuracy_score(y_true = y_test, y_pred = predictions)
 
 #%% plot function
 
@@ -218,5 +236,5 @@ if __name__ == "__main__":
                      'personal']
     
     #plot_summary(spending_output_df, necessary, discretionary)
-    spending_threshold(spending_output_df, 800)
+    #spending_threshold(spending_output_df, 800)
 
