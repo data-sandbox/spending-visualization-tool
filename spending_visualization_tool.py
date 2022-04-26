@@ -76,15 +76,6 @@ def clean_data(spending_df, account, month):
     
     return spending_df
 
-#%% NEW WORKFLOW
-"""
-- create main df with all transactions and new column with account name
-- print latest month's df of transactions and require input before adding it?
-- groupby just before plotting
-- separate plotting by making new groupby df, add average column, sort by average
-column, and split index with one half on one plot, other half on second plot
-"""
-
 #%% iterate through list of csv files
 for f in csv_files:
     
@@ -118,23 +109,6 @@ for f in csv_files:
 
 # convert date to string so Dec to Jan dates still plot side by side
 #spending_output_df['Date'] = spending_output_df['Date'].astype(str)
-
-#%% machine learning
-# note: DecisionTreeClassifier is expecting X to be numerical, not categorical!
-    
-# features = ['Description', 'Debit', 'Credit']
-# X = spending_main_df[features].copy()
-# y = spending_main_df['Category'].copy()
-
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, 
-#                                                     random_state=15)
-# # fit on training set
-# category_classifier = DecisionTreeClassifier(max_leaf_nodes=10, random_state=0)
-# category_classifier.fit(X_train, y_train)
-
-# predictions = category_classifier.predict(X_test)
-
-# accuracy = accuracy_score(y_true = y_test, y_pred = predictions)
 
 #%% plot function
 
