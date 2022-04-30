@@ -76,40 +76,6 @@ def clean_data(spending_df, account, month):
     
     return spending_df
 
-#%% iterate through list of csv files
-for f in csv_files:
-    
-    # slice filename to get the month
-    month = f[71:75]
-    # get account name
-    account = f[75:]
-    account = account[:-4]
-    # print status
-    print(month)
-    
-    # read the csv file and clean the data
-    spending_month_df = clean_data(pd.read_csv(f), account, month)
-    
-    # create summary dataframe with categories spending grouped
-    #spending_grouped_df = spending_df.groupby('Category', as_index=False).agg('sum')
-    
-    # add column identifying the year and month
-    #spending_grouped_df.insert(1, 'Date', month)
-    
-    # add monthly data to running annual data
-    # spending_output_df = pd.concat([spending_output_df, spending_grouped_df],
-    #                                ignore_index=True, sort=False)
-    spending_main_df = pd.concat([spending_main_df, spending_month_df],
-                                 ignore_index=True, sort=False)
-# group by category for each month
-#spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
-
-# WIP. Get mean to split categories across multiple plots later on
-#mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
-
-# convert date to string so Dec to Jan dates still plot side by side
-#spending_output_df['Date'] = spending_output_df['Date'].astype(str)
-
 #%% plot function
 
 def plot_summary(data_all, categories1, categories2):
@@ -195,6 +161,52 @@ def spending_threshold(data_df, threshold):
 #%% run function
 
 if __name__ == "__main__":
+    
+    #% iterate through list of csv files
+    for f in csv_files:
+        
+        # slice filename to get the month
+        month = f[71:75]
+        # get account name
+        account = f[75:]
+        account = account[:-4]
+        # print status
+        print(month)
+        
+        # read the csv file and clean the data
+        spending_month_df = clean_data(pd.read_csv(f), account, month)
+        
+        # create summary dataframe with categories spending grouped
+        #spending_grouped_df = spending_df.groupby('Category', as_index=False).agg('sum')
+        
+        # add column identifying the year and month
+        #spending_grouped_df.insert(1, 'Date', month)
+        
+        # add monthly data to running annual data
+        spending_main_df = pd.concat([spending_main_df, spending_month_df],
+                                     ignore_index=True, sort=False)
+    
+    spending_grouped_df = spending_main_df.groupby('Category', as_index=False).agg('sum')
+    
+    # overview plot
+    plt.close('all')
+    #colors = sns.color_palette("Set2")
+    plt.figure()
+    g = sns.lineplot(data=spending_main_df,
+                  x='Month', y='Net', 
+                  hue='Category',
+                  marker='o')
+    plt.xticks(rotation=60)  
+    plt.show()
+    
+    # group by category for each month
+    #spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
+    
+    # WIP. Get mean to split categories across multiple plots later on
+    #mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
+    
+    # convert date to string so Dec to Jan dates still plot side by side
+    #spending_output_df['Date'] = spending_output_df['Date'].astype(str)
     
     # set desired categories to visualize
     necessary = ['rent',
