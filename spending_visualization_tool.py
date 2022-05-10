@@ -83,7 +83,11 @@ def plot_summary(data_all, categories1, categories2):
     Plot subsets of the data.
 
     """
-    
+    # reset default parameters
+    sns.set_theme()
+    # font size
+    sns.set_context("notebook")
+
     # inputs
     label_angle = 60
     
@@ -105,7 +109,7 @@ def plot_summary(data_all, categories1, categories2):
     #colors = sns.color_palette("Set2")
     plt.figure()
     g = sns.lineplot(data=data_all,
-                  x='Date', y='Net', 
+                  x='Month', y='Net', 
                   hue='Category',
                   marker='o')
     plt.xticks(rotation=label_angle)  
@@ -113,25 +117,36 @@ def plot_summary(data_all, categories1, categories2):
     
     # category subset 1
     plt.figure()
-    colors = sns.color_palette("Set2", len(categories1))
+    #colors = sns.color_palette("Set2", len(categories1))
     g = sns.lineplot(data=data_subset1,
-                 x='Date', y='Net', 
+                 x='Month', y='Net', 
                  hue='Category',
-                 marker='o', 
-                 palette=colors)
+                 marker='o')
     plt.xticks(rotation=label_angle)
+    plt.xlabel('Year, Month')
+    plt.ylabel('Expenses ($)')
+    plt.title('Expenses versus Time')
+    # Put the legend out of the figure
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.tight_layout()
     plt.show()
     
     # category subset 2
     plt.figure()
-    colors = sns.color_palette("Set2", len(categories2))
+    #colors = sns.color_palette("Set2", len(categories2))
     g = sns.lineplot(data=data_subset2,
-                 x='Date', y='Net', 
+                 x='Month', y='Net', 
                  hue='Category',
-                 marker='o', 
-                 palette=colors)
+                 marker='o')
     plt.xticks(rotation=label_angle)
+    plt.xlabel('Year, Month')
+    plt.ylabel('Expenses ($)')
+    plt.title('Expenses versus Time')
+    # Put the legend out of the figure
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.tight_layout()
     plt.show()
+
 
 #%% plot function
 def spending_threshold(data_df, threshold):
@@ -176,37 +191,32 @@ if __name__ == "__main__":
         # read the csv file and clean the data
         spending_month_df = clean_data(pd.read_csv(f), account, month)
         
-        # create summary dataframe with categories spending grouped
-        #spending_grouped_df = spending_df.groupby('Category', as_index=False).agg('sum')
-        
-        # add column identifying the year and month
-        #spending_grouped_df.insert(1, 'Date', month)
-        
         # add monthly data to running annual data
         spending_main_df = pd.concat([spending_main_df, spending_month_df],
                                      ignore_index=True, sort=False)
     
-    spending_grouped_df = spending_main_df.groupby('Category', as_index=False).agg('sum')
+    # group based on month and category totals
+    spending_grouped_df = spending_main_df.groupby(['Month','Category'], as_index=False).agg('sum')
+    
+    # create df copy to add noise to
+    spending_noise_df = spending_grouped_df.copy()
+    # add noise
+    spending_noise_df['Net'] = spending_noise_df['Net'] + np.random.normal(loc=50, scale=25)
     
     # overview plot
-    plt.close('all')
-    #colors = sns.color_palette("Set2")
-    plt.figure()
-    g = sns.lineplot(data=spending_main_df,
-                  x='Month', y='Net', 
-                  hue='Category',
-                  marker='o')
-    plt.xticks(rotation=60)  
-    plt.show()
+    # plt.close('all')
+    # #colors = sns.color_palette("Set2")
+    # plt.figure()
+    # g = sns.lineplot(data=spending_grouped_df,
+    #               x='Month', y='Net', 
+    #               hue='Category',
+    #               marker='o')
+    # plt.xticks(rotation=60)  
+    # plt.show()
     
     # group by category for each month
     #spending_output_df = spending_output_df.groupby(['Date', 'Category'], as_index=False).sum()
-    
-    # WIP. Get mean to split categories across multiple plots later on
-    #mean_test = spending_output_df.groupby(['Category'], as_index=False).mean()
-    
-    # convert date to string so Dec to Jan dates still plot side by side
-    #spending_output_df['Date'] = spending_output_df['Date'].astype(str)
+
     
     # set desired categories to visualize
     necessary = ['rent',
@@ -215,12 +225,12 @@ if __name__ == "__main__":
                  'utilities',
                  'groceries']
     
-    discretionary = ['travel',
-                     'hobby',
-                     'restaurant',
+    discretionary = ['restaurant',
+                     'travel',
+                     'groceries',
                      'home',
-                     'personal']
+                     'utilities']
     
-    #plot_summary(spending_output_df, necessary, discretionary)
+    plot_summary(spending_noise_df, necessary, discretionary)
     #spending_threshold(spending_output_df, 800)
 
